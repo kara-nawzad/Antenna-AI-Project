@@ -13,7 +13,8 @@ from scipy.interpolate import make_interp_spline
 from groq import Groq
 from groq import AuthenticationError as GroqAuthError
 
-HF_REPO = "Saman23/antenna-models"
+# Your Hugging Face model repo (all large models/data live here)
+HF_REPO = os.getenv("HF_REPO", "kara-nawzad/antenna-models")
 
 
 def _download_hf(filename):
@@ -1418,24 +1419,52 @@ with chat_col:
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
+            response = None
+            last_err = None
+            # AETHER model fallback list — ordered by preference.
+            # Groq occasionally deprecates model IDs; we try several so the
+            # assistant keeps working without a code deploy.
+            AETHER_MODELS = [
+                "openai/gpt-oss-20b",          # Groq recommended replacement for llama-3.1-8b
+                "qwen/qwen3.6-27b",             # fallbacks if primary is busy/down
+                "openai/gpt-oss-120b",
+                "llama-3.3-70b-versatile",      # older names (might still work for some tiers)
+                "llama-3.1-8b-instant",
+                "llama3-70b-8192",
+                "llama3-8b-8192",
+                "mixtral-8x7b-32768",
+            ]
             try:
-                completion = client.chat.completions.create(
-                    model="llama3-8b-8192",
-                    messages=st.session_state.messages,
-                )
-                response = completion.choices[0].message.content
+                for model_id in AETHER_MODELS:
+                    try:
+                        completion = client.chat.completions.create(
+                            model=model_id,
+                            messages=st.session_state.messages,
+                        )
+                        response = completion.choices[0].message.content
+                        if response:
+                            break
+                    except Exception as model_err:
+                        last_err = model_err
+                        continue
             except GroqAuthError:
                 st.session_state.messages.pop()
                 st.error(
-                    "Invalid Groq API key. In Streamlit Cloud go to **Manage app → Settings → Secrets** "
-                    "and set `GROQ_API_KEY` to a valid key from [console.groq.com](https://console.groq.com). "
-                    "Use only the key (starts with `gsk_`), no extra quotes, then **Reboot app**."
+                    "Invalid Groq API key. In Streamlit/fly.io secrets set `GROQ_API_KEY` "
+                    "to a valid key from [console.groq.com](https://console.groq.com/keys). "
+                    "Use only the key (starts with `gsk_`), no quotes, then re-deploy."
                 )
                 response = None
             except Exception as e:
                 st.session_state.messages.pop()
                 st.error(f"AETHER request failed: {e}")
                 response = None
+            if response is None and last_err is not None:
+                st.session_state.messages.pop()
+                st.error(
+                    "AETHER is temporarily unavailable (all Groq models were rejected — "
+                    f"last error: {last_err}). Try again later or check your API key."
+                )
             if response:
                 with st.chat_message("assistant"):
                     st.markdown(response)
