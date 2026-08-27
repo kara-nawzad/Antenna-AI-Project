@@ -1,0 +1,41 @@
+# Git & Python
+.git/
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+myenv/
+.env
+.pytest_cache/
+.mypy_cache/
+
+# Model files — these are downloaded at runtime from Hugging Face, NOT baked into the image
+*.keras
+*.h5
+*.pkl          # note: scaler_geo.pkl/scaler_perf.pkl are small and IN the image (see ! rules below)
+!scaler_geo.pkl
+!scaler_perf.pkl
+
+# Data
+antenna_data.csv
+antenna_data_cleaned.csv
+antenna_data_website.csv
+processed_data.npz
+*.log
+
+# Streamlit secrets (set via fly secrets instead)
+.streamlit/secrets.toml
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.bat
+
+# Docs / dev artifacts
+BACKUP_RESTORE.md
+README.md

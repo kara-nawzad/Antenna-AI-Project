@@ -13,7 +13,8 @@ from scipy.interpolate import make_interp_spline
 from groq import Groq
 from groq import AuthenticationError as GroqAuthError
 
-HF_REPO = "Saman23/antenna-models"
+# Your Hugging Face model repo (all large models/data live here)
+HF_REPO = os.getenv("HF_REPO", "kara-nawzad/antenna-models")
 
 
 def _download_hf(filename):

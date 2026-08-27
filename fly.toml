@@ -1,0 +1,41 @@
+# fly.toml — Antenna AI deployment config
+# Generated for https://fly.io deployment.
+# Deploy with:  fly deploy
+
+app = "antenna-ai-spu"           # App name — must be UNIQUE across all of fly.io.
+                                # If "antenna-ai-spu" is taken, change it here (e.g. antenna-ai-kara).
+primary_region = "fra"          # Frankfurt — closest region to Iraq/Sulaymaniyah.
+
+[build]
+
+[env]
+  PORT = "8080"
+  HF_REPO = "kara-nawzad/antenna-models"
+  # TensorFlow on CPU — silence warnings, prevent it from grabbing GPUs we don't have
+  TF_CPP_MIN_LOG_LEVEL = "2"
+  CUDA_VISIBLE_DEVICES = "-1"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"       # FREE-TIER FRIENDLY: app sleeps when nobody visits.
+  auto_start_machines = true        # Wakes up when someone opens the URL.
+  min_machines_running = 0          # No idle VM = no credits burned.
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[http_service.checks]]
+    grace_period = "300s"
+    interval = "30s"
+    method = "GET"
+    timeout = "10s"
+    path = "/_stcore/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
+  cpus = 1

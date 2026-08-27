@@ -19,7 +19,8 @@ import numpy as np
 import joblib
 import tensorflow as tf
 
-HF_REPO = "Saman23/antenna-models"
+# Your Hugging Face model repo (all large models/data live here)
+HF_REPO = os.getenv("HF_REPO", "kara-nawzad/antenna-models")
 
 
 def _download_hf(filename):
