@@ -1420,7 +1420,7 @@ with chat_col:
                 st.markdown(prompt)
             try:
                 completion = client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
+                    model="llama3-8b-8192",
                     messages=st.session_state.messages,
                 )
                 response = completion.choices[0].message.content

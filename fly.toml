@@ -1,0 +1,33 @@
+app = "antenna-ai-project"
+primary_region = "fra"
+
+[build]
+
+[env]
+  PORT = "8080"
+  HF_REPO = "kara-nawzad/antenna-models"
+  TF_CPP_MIN_LOG_LEVEL = "2"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[http_service.checks]]
+    grace_period = "300s"
+    interval = "30s"
+    method = "GET"
+    timeout = "10s"
+    path = "/_stcore/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
