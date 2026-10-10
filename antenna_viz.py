@@ -134,3 +134,74 @@ if __name__ == "__main__":
     # Test the Stepped Rectangle (ID 2)
     draw_antenna(12, 15, 30)
     plt.show()
+
+# ---------------------------------------------------------------------------
+# Geometry as data
+#
+# The 12 patch outlines expressed as polygons, so they can be rendered by
+# something other than matplotlib (see antenna_charts.patch_3d_fig). The
+# constants and vertex definitions are identical to draw_antenna() above.
+# ---------------------------------------------------------------------------
+LF, WF, GAP, WS, LS = 15.0, 3.0, 0.5, 50.0, 60.0
+G_YMAX = 12.0
+
+
+def _rect(x, y, w, h):
+    return np.array([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], dtype=float)
+
+
+def patch_polygons(antenna_id, lp, wp):
+    """Return the metal outlines for a given design.
+
+    dict with keys:
+      'patch'     list of (N,2) arrays -- the radiating element
+      'grounds'   list of (N,2) arrays -- the two CPW ground planes
+      'feed'      (N,2) array          -- the feed line
+      'substrate' (width, length)      -- the FR-4 slab footprint
+    """
+    gw = (WS / 2) - (WF / 2) - GAP
+    grounds = [_rect(-WS / 2, 0, gw, G_YMAX), _rect(WF / 2 + GAP, 0, gw, G_YMAX)]
+    feed = _rect(-WF / 2, 0, WF, LF)
+
+    lf, wp, lp = float(LF), float(wp), float(lp)
+    aid = int(antenna_id)
+    patch = []
+
+    if aid == 1:                                     # Rectangle
+        patch = [_rect(-wp / 2, lf, wp, lp)]
+    elif aid == 2:                                   # Stepped
+        patch = [_rect(-7.5, lf, 15, lp / 2), _rect(-wp / 2, lf + lp / 2, wp, lp / 2)]
+    elif aid == 3:                                   # T-Shape
+        patch = [_rect(-1.5, lf, 3, lp / 2), _rect(-wp / 2, lf + lp / 2, wp, lp / 2)]
+    elif aid == 4:                                   # Ellipse
+        t = np.linspace(0, 2 * np.pi, 90)
+        patch = [np.column_stack([(wp / 2) * np.cos(t) + 0.0,
+                                  lf + lp / 2 + (lp / 2) * np.sin(t)])]
+    elif aid == 5:                                   # Semi-Ellipse
+        t = np.linspace(0, np.pi, 50)
+        pts = np.column_stack([(wp / 2) * np.cos(t), lf + lp * np.sin(t)])
+        patch = [np.vstack([pts, [[wp / 2, lf], [-wp / 2, lf]]])]
+    elif aid == 6:                                   # Pie-Sector
+        t = np.linspace(0, np.pi, 50)
+        arc = np.column_stack([(wp / 2) * np.cos(t),
+                               (lf + lp * 0.6) + (lp * 0.4) * np.sin(t)])
+        patch = [np.vstack([[1.5, lf], arc, [-1.5, lf]])]
+    elif aid == 7:                                   # Triangle
+        patch = [np.array([[-wp / 2, lf], [wp / 2, lf], [0, lf + lp]], dtype=float)]
+    elif aid == 8:                                   # Trapezoid
+        patch = [np.array([[-1.5, lf], [1.5, lf], [wp / 2, lf + lp], [-wp / 2, lf + lp]], dtype=float)]
+    elif aid == 9:                                   # Diamond
+        patch = [np.array([[-1.5, lf], [1.5, lf], [wp / 2, lf + lp / 2],
+                           [0, lf + lp], [-wp / 2, lf + lp / 2]], dtype=float)]
+    elif aid == 10:                                  # Hexagon
+        y1, y2 = lf + lp / 3, lf + 2 * lp / 3
+        patch = [np.array([[-1.5, lf], [1.5, lf], [wp / 2, y1], [wp / 2, y2],
+                           [1.5, lf + lp], [-1.5, lf + lp], [-wp / 2, y2], [-wp / 2, y1]], dtype=float)]
+    elif aid == 11:                                  # Pentagon
+        patch = [np.array([[-wp / 2, lf], [wp / 2, lf], [wp / 2, lf + lp / 2],
+                           [0, lf + lp], [-wp / 2, lf + lp / 2]], dtype=float)]
+    elif aid == 12:                                  # Cross
+        patch = [_rect(-1.5, lf, 3, lp), _rect(-wp / 2, lf + lp / 2 - 1.5, wp, 3)]
+
+    return {"patch": patch, "grounds": grounds, "feed": feed,
+            "substrate": (float(WS), float(LS))}

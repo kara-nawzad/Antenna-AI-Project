@@ -1,10 +1,18 @@
-streamlit
-numpy
-pandas
-tensorflow-cpu
-scikit-learn
-joblib
-matplotlib
-scipy
-groq
-huggingface_hub
+# Pinned for reproducible builds.
+#
+# These were unpinned, so every `fly deploy` resolved whatever was newest on PyPI.
+# That is how a working app breaks on a redeploy: pandas alone shipped a 3.0 major
+# with copy-on-write and string-dtype changes since this code was written.
+# Versions below are the set the app was verified against.
+streamlit==1.60.0
+numpy==1.26.4
+pandas==2.2.3
+tensorflow-cpu==2.16.2
+scikit-learn==1.5.2
+joblib==1.4.2
+matplotlib==3.9.2
+scipy==1.13.1
+groq==0.11.0
+huggingface_hub==0.25.2
+plotly==5.24.1
+pillow==10.4.0

@@ -1,2 +1,29 @@
+# Git LFS is only for genuinely large binaries.
+#
+# *.keras is worth tracking in LFS (forward_model_v2_curve.keras is ~115 MB), though
+# it is currently .gitignored and fetched from the Hub instead.
 *.keras filter=lfs diff=lfs merge=lfs -text
-*.pkl filter=lfs diff=lfs merge=lfs -text
+
+# NOTE: *.pkl was previously routed to LFS as well. That was a mistake and it is the
+# reason a fresh `git clone` of this repo cannot run:
+#
+#   scaler_geo.pkl  -> 129-byte LFS pointer text (real file is 1575 bytes)
+#   scaler_perf.pkl -> 129-byte LFS pointer text
+#
+# A git-based host (Hugging Face Space, Streamlit Community Cloud, any CI runner)
+# clones without LFS, gets the pointer text, and joblib.load() fails. fly.io only
+# works today because `fly deploy` uploads your local working tree, where LFS has
+# already materialised the files.
+#
+# These scalers are ~1.6 KB -- four orders of magnitude below any LFS threshold --
+# so they belong in git as ordinary files.
+#
+# TO FIX THE EXISTING POINTERS (one-time, on a machine with git-lfs installed):
+#
+#   git lfs install
+#   git lfs pull                       # materialise the real bytes
+#   git rm --cached scaler_geo.pkl scaler_perf.pkl
+#   git add .gitattributes scaler_geo.pkl scaler_perf.pkl
+#   git commit -m "store scalers as plain files, not LFS pointers"
+#
+# The Dockerfile now fails the build early if it ever sees a pointer again.
