@@ -30,4 +30,8 @@ primary_region = "fra"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "1gb"
+  # 1gb -> 2gb. TensorFlow CPU plus a 115 MB Keras model plus pandas/matplotlib did
+  # not fit in 1 GB; the app was being OOM-killed and restarting, which is why every
+  # visit paid a full cold start even with min_machines_running = 1. The duplicate
+  # model load is now gone too, so 2 GB has real headroom. Costs roughly +$5/month.
+  memory = "2gb"

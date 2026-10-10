@@ -19,7 +19,10 @@ import numpy as np
 import joblib
 import tensorflow as tf
 
-HF_REPO = "Saman23/antenna-models"
+# Respect the HF_REPO environment variable (fly.toml / Dockerfile set it). It was
+# previously hardcoded to a different account's repo than 10_web_app.py used, so the
+# dip specialist was never fetched from the right place.
+HF_REPO = os.getenv("HF_REPO", "kara-nawzad/antenna-models")
 
 
 def _download_hf(filename):
@@ -37,10 +40,20 @@ def _download_hf(filename):
 FREQS_RAW = np.linspace(1.0, 7.0, 151)
 
 
-def load_v2_engines(model_dir=None):
-    """Load the Two-Brain 2.0 stack (or fall back to v1 if v2 is missing)."""
+def load_v2_engines(model_dir=None, main_model=None):
+    """Load the Two-Brain 2.0 stack (or fall back to v1 if v2 is missing).
+
+    main_model : optional already-loaded Keras model. 10_web_app.load_brains() loads
+      forward_model_v2_curve.keras for the v1 path; passing that same object here
+      avoids loading the identical 115 MB model a second time. Holding two full
+      copies of it plus TensorFlow inside a 1 GB container was the single largest
+      memory cost in the app and the most likely cause of OOM restarts.
+    """
     if model_dir is not None:
         os.chdir(model_dir)
+
+    if main_model is not None:
+        return _finish_load(main_model)
 
     main_path = "forward_model_v2_curve.keras"
     if not os.path.exists(main_path):
@@ -58,7 +71,11 @@ def load_v2_engines(model_dir=None):
             )
 
     main = tf.keras.models.load_model(main_path, compile=False)
+    return _finish_load(main)
 
+
+def _finish_load(main):
+    """Shared tail of load_v2_engines(): attach the specialist + scalers."""
     dip = None
     _download_hf("s11_dip_specialist.pkl")
     if os.path.exists("s11_dip_specialist.pkl"):
@@ -67,6 +84,11 @@ def load_v2_engines(model_dir=None):
         except Exception as e:
             print(f"[HF] Could not load specialist: {e}")
             dip = None
+    if dip is None:
+        # Surface this clearly: without the specialist the app runs the CSV anchor
+        # path only, and the "Two-Brain 2.0" label would be misleading.
+        print("[ENGINE] s11_dip_specialist.pkl unavailable -> running main brain only "
+              f"(looked in HF repo '{HF_REPO}')")
 
     s_geo = joblib.load("scaler_geo.pkl")
     s_perf = joblib.load("scaler_perf.pkl")
